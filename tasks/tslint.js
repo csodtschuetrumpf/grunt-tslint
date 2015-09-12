@@ -28,9 +28,10 @@ module.exports = function(grunt) {
     });
     var done = this.async();
     var failed = 0;
+    this.success = true;
 
-    // Iterate over all specified file groups, async for 'streaming' output on large projects
-    grunt.util.async.reduce(this.filesSrc, true, function(success, filepath, callback) {
+    grunt.util.async.filter(this.filesSrc, function(filepath, callback){
+      var success = true;
       if (!grunt.file.exists(filepath)) {
         grunt.log.warn('Source file "' + filepath + '" not found.');
       } else {
@@ -42,16 +43,11 @@ module.exports = function(grunt) {
         if(result.failureCount > 0) {
           var outputString = "";
           var outputFile = options.outputFile;
-          var appendToOutput = options.appendToOutput;
 
           failed += result.failureCount;
 
-          if (outputFile != null && grunt.file.exists(outputFile)) {
-            if (appendToOutput) {
-              outputString = grunt.file.read(outputFile);
-            } else {
-              grunt.file.delete(outputFile);
-            }
+          if (outputFile != null) {
+            outputString = grunt.file.read(outputFile);
           }
           result.output.split("\n").forEach(function(line) {
             if(line !== "") {
@@ -65,26 +61,24 @@ module.exports = function(grunt) {
           if(outputFile != null) {
             grunt.file.write(outputFile, outputString);
           }
+          this.success = false;
           success = false;
         }
       }
       // Using setTimout as process.nextTick() doesn't flush
-      setTimeout(function() {
-        callback(null, success);
-      }, 1);
+      setTimeout(function() { callback(!success); }, 1);
 
-    }, function(err, success) {
-        if (err) {
-            done(err);
-        } else if (!success) {
-            grunt.log.error(failed + " " + grunt.util.pluralize(failed,"error/errors") + " in " +
-                            this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files"));
-            done(false);
-        } else {
-            grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files") + " lint free.");
-            done();
-        }
+    }.bind(this),
+    function (results){
+      if (!this.success) {
+          grunt.log.error(failed + " " + grunt.util.pluralize(failed,"error/errors") + " in " +
+                          this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files"));
+          done(false);
+      } else {
+          grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files") + " lint free.");
+          done();
+      }
     }.bind(this));
-  });
 
+  })
 };
