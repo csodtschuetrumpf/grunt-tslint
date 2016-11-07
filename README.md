@@ -13,7 +13,7 @@ npm install grunt-tslint --save-dev
 Once the plugin has been installed, it may be enabled inside your Gruntfile with this line of JavaScript:
 
 ```
-grunt.loadNpmTasks('grunt-tslint');
+grunt.loadNpmTasks("grunt-tslint");
 ```
 
 ## The "tslint" task
@@ -24,37 +24,41 @@ In your project's `Gruntfile.js`, add a section named `tslint` to the data objec
 
 ```js
 grunt.initConfig({
-  tslint: {
-    options: {
-      // Task-specific options go here.
+    tslint: {
+        options: {
+            // Task-specific options go here.
+        },
+        your_target: {
+            // Target-specific file lists and/or options go here.
+        },
     },
-    your_target: {
-      // Target-specific file lists and/or options go here.
-    },
-  },
 })
 ```
 
 ### Options
 
-#### options.configuration
-
-Type: `Object`
-
-A JSON configuration object passed into tslint.
+* `options.configuration: Object | string` - A TSLint configuration; can either be a JSON configuration object or a path to a tslint.json config file.
+* `options.force: boolean` - If `true`, the task will suceed even if lint failures are found. Defaults to `false`.
 
 ### Usage Example
 
 ```js
 grunt.initConfig({
-  tslint: {
-    options: {
-      configuration: grunt.file.readJSON("tslint.json")
-    },
-    files: {
-      src: ['src/file1.ts', 'src/file2.ts']
+    tslint: {
+        options: {
+            // can be a configuration object or a filepath to tslint.json
+            configuration: "tslint.json",
+            // If set to true, tslint errors will be reported, but not fail the task
+            // If set to false, tslint errors will be reported, and the task will fail
+            force: false
+        },
+        files: {
+            src: [
+                "src/file1.ts",
+                "src/file2.ts"
+            ]
+        }
     }
-  }
 })
 ```
 
@@ -62,7 +66,3 @@ grunt.initConfig({
 
 In lieu of a formal styleguide, take care to maintain the existing coding style.
 Add unit tests for any new or changed functionality. Lint and test your code using [Grunt](http://gruntjs.com/).
-
-## Release History
-
-**0.1.1** Initial Release

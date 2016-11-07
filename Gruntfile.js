@@ -17,42 +17,52 @@
 "use strict";
 
 module.exports = function(grunt) {
+    grunt.loadNpmTasks("grunt-contrib-clean");
+    grunt.loadNpmTasks("grunt-eslint");
+    grunt.loadNpmTasks("grunt-mocha-test");
 
-  grunt.loadNpmTasks("grunt-contrib-jshint");
-  grunt.loadNpmTasks("grunt-contrib-clean");
-
-  grunt.initConfig({
-    jshint: {
-      all: [
-        "Gruntfile.js",
-        "tasks/*.js"
-      ],
-      options: {
-        jshintrc: ".jshintrc"
-      }
-    },
-
-    tslint: {
-      errors: {
-        options: {
-          configuration: grunt.file.readJSON("tslint.json")
+    grunt.initConfig({
+        eslint: {
+            target: [
+                "Gruntfile.js",
+                "tasks/*.js",
+            ],
         },
-        files: {
-          src: [
-            "test/fixtures/correctFile.ts",
-            "test/fixtures/errorFile1.ts",
-            "test/fixtures/errorFile2.ts"
-        ]}
-      }
-    }
-  });
 
-  // actually load this plugin's task(s)
-  grunt.loadTasks("tasks");
+        tslint: {
+            errors: {
+                options: {
+                    configuration: "tslint.json",
+                    force: true,
+                },
+                files: {
+                    src: [
+                        "test/fixtures/correctFile.ts",
+                        "test/fixtures/errorFile1.ts",
+                        "test/fixtures/errorFile2.ts",
+                    ],
+                },
+            },
+        },
 
-  grunt.registerTask("test", ["tslint"]);
+        mochaTest: {
+            test: {
+                options: {
+                    reporter: "spec",
+                    quiet: false,
+                    log: true,
+                },
+                src: ["test/tasks/**/*.js"],
+            },
+        },
+    });
 
-  // by default, lint and run all tests
-  grunt.registerTask("default", ["jshint", "test"]);
+    // actually load this plugin's task(s)
+    grunt.loadTasks("tasks");
 
+    // by default, lint and run all tests
+    grunt.registerTask("default", ["eslint", "test"]);
+
+    // run unit tests
+    grunt.registerTask("test", ["mochaTest"]);
 };

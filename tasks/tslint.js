@@ -16,69 +16,99 @@
 
 "use strict";
 
-module.exports = function(grunt) {
+/* eslint-disable no-invalid-this, no-use-before-define */
+module.exports = function (grunt) {
+    var Linter = require("tslint");
 
-  var Linter = require("tslint");
+    grunt.registerMultiTask("tslint", "A linter for TypeScript.", function () {
+        var options = this.options({
+            configuration: null,
+            formatter: "prose",
+            outputFile: null,
+            outputReport: null,
+            appendToOutput: false,
+            force: false,
+        });
 
-  grunt.registerMultiTask("tslint", "A linter for TypeScript.", function() {
-    var options = this.options({
-      formatter: "prose",
-      outputFile: null,
-      appendToOutput: false
-    });
-    var done = this.async();
-    var failed = 0;
-    this.success = true;
+        var specifiedConfiguration = options.configuration;
+        var done = this.async();
+        var failed = 0;
+        this.success = true;
+        var results = [];
 
-    grunt.util.async.filter(this.filesSrc, function(filepath, callback){
-      var success = true;
-      if (!grunt.file.exists(filepath)) {
-        grunt.log.warn('Source file "' + filepath + '" not found.');
-      } else {
-        var contents = grunt.file.read(filepath);
-        var linter = new Linter(filepath, contents, options);
+        var force = options.force;
+        var outputFile = options.outputFile;
+        var appendToOutput = options.appendToOutput;
 
-        var result = linter.lint();
+        // Iterate over all specified file groups, async for 'streaming' output on large projects
+        grunt.util.async.filter(this.filesSrc, function(filepath, callback){
+            var success = true;
+            if (!grunt.file.exists(filepath)) {
+                grunt.log.warn('Source file "' + filepath + '" not found.');
+            } else {
+                var configuration = specifiedConfiguration;
+                if (configuration == null || typeof configuration === "string") {
+                    configuration = Linter.findConfiguration(configuration, filepath);
+                }
+                options.configuration = configuration;
 
-        if(result.failureCount > 0) {
-          var outputString = "";
-          var outputFile = options.outputFile;
+                var contents = grunt.file.read(filepath);
+                var linter = new Linter(filepath, contents, options);
+                var result = linter.lint();
 
-          failed += result.failureCount;
+                if (result.failureCount > 0) {
+                    var outputString = "";
 
-          if (outputFile != null) {
-            outputString = grunt.file.read(outputFile);
-          }
-          result.output.split("\n").forEach(function(line) {
-            if(line !== "") {
-              if (outputFile != null) {
-                outputString += line + "\n";
-              } else {
-                grunt.log.error(line);
-              }
+                    failed += result.failureCount;
+
+                    if (outputFile != null) {
+                        outputString = grunt.file.read(outputFile);
+                    }
+                    result.output.split("\n").forEach(function (line) {
+                        if (line !== "") {
+                            results = results.concat(
+                                (options.formatter.toLowerCase() === "json") ? JSON.parse(line) : line
+                            );
+                            if (outputFile != null) {
+                                outputString += line + "\n";
+                            } else {
+                                grunt.log.error(line);
+                            }
+                        }
+                    });
+                    if (outputFile != null) {
+                        grunt.file.write(outputFile, outputString);
+                        appendToOutput = true;
+                    }
+                    this.success = false;
+                    success = false;
+                }
             }
-          });
-          if(outputFile != null) {
-            grunt.file.write(outputFile, outputString);
-          }
-          this.success = false;
-          success = false;
+
+            // Using setTimout as process.nextTick() doesn't flush
+            setTimeout(function() { callback(!success); }, 1);
+
+
+        }.bind(this),
+            function (results){
+                if (!this.success) {
+                    grunt.log.error(failed + " " + grunt.util.pluralize(failed,"error/errors") + " in " +
+                        this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files"));
+                    done(false);
+                } else {
+                    grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files") + " lint free.");
+                    done();
+                }
+        }.bind(this));
+
+        function report() {
+            if (options.outputReport) {
+                grunt.config(options.outputReport.split("."), {
+                    failed: failed,
+                    files: this.filesSrc,
+                    results: results,
+                });
+            }
         }
-      }
-      // Using setTimout as process.nextTick() doesn't flush
-      setTimeout(function() { callback(!success); }, 1);
-
-    }.bind(this),
-    function (results){
-      if (!this.success) {
-          grunt.log.error(failed + " " + grunt.util.pluralize(failed,"error/errors") + " in " +
-                          this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files"));
-          done(false);
-      } else {
-          grunt.log.ok(this.filesSrc.length + " " + grunt.util.pluralize(this.filesSrc.length,"file/files") + " lint free.");
-          done();
-      }
-    }.bind(this));
-
-  })
+    });
 };
