@@ -42,13 +42,8 @@
     "typescript": "latest"
   },
   "peerDependencies": {
-<<<<<<< HEAD
-    "grunt": "~0.4.5",
-    "tslint": "^2.4.0 || >=2.5.0-beta"
-=======
     "grunt": ">=0.4.5",
     "tslint": "^3.7.3 || 3.7.0-dev.5 || >=3.8.0-dev || >=3.9.0-dev || >=3.10.0-dev || >=3.11.0-dev || >=3.12.0-dev || >=3.13.0-dev || >=3.14.0-dev || >=3.15.0-dev || >=4.0.0-dev"
->>>>>>> 9176938acab0112f56796310768580c962834b0e
   },
   "keywords": [
     "gruntplugin",
